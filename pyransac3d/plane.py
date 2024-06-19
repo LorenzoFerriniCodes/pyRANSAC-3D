@@ -20,6 +20,36 @@ class Plane:
         self.inliers = []
         self.equation = []
 
+    def set_plane(self, a: float, b: float, c: float):
+        """ 
+        Set the initial guess for the normal vector
+        """
+        self.normal_vector = np.array([a, b, c])
+        self.normal_vector /= np.linalg.norm(self.normal_vector)
+    
+    def check_plane(self, pts, ang_threshold):
+        """
+        Check whether three points belong to a plane
+        parallel to the initial guess
+        """
+        if not hasattr(self, 'normal_vector'):
+            return True
+
+        v1 = pts[1]-pts[0]
+        v2 = pts[2]-pts[0]
+
+        normal_vector = np.cross(v1, v2)
+
+        magnitude = np.linalg.norm(normal_vector)
+        if magnitude == 0:
+            return False
+        normal_vector = normal_vector / magnitude
+        angle = np.dot(normal_vector, self.normal_vector)
+        angle = np.abs(angle)
+        if np.arccos(angle) > ang_threshold:
+            return False
+        return True
+
     def fit(self, pts, thresh=0.05, minPoints=100, maxIteration=1000):
         """
         Find the best equation for a plane.
@@ -42,6 +72,9 @@ class Plane:
             # Samples 3 random points
             id_samples = random.sample(range(0, n_points), 3)
             pt_samples = pts[id_samples]
+
+            if not self.check_plane(pt_samples, 0.1):
+                continue
 
             # We have to find the plane equation described by those 3 points
             # We find first 2 vectors that are part of this plane
